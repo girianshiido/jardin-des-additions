@@ -11,6 +11,7 @@ async function files(dir, prefix = '') {
 }
 const paths = await files('docs');
 const hash = createHash('sha256');
+hash.update(await readFile('scripts/build-sw.mjs'));
 for (const path of paths) hash.update(await readFile(`docs/${path}`));
 const version = hash.digest('hex').slice(0, 16);
 await writeFile('docs/.nojekyll', '');
@@ -35,7 +36,9 @@ self.addEventListener('fetch', event => {
       } catch { /* Fall back to the complete installed release without a network. */ }
       return (await cache.match('./index.html')) || Response.error();
     }
-    return (await cache.match(event.request)) || fetch(event.request);
+    // These same-origin static files have identical content for every request.
+    // A development server's Vary: Origin must not hide a precached module offline.
+    return (await cache.match(event.request, { ignoreVary: true })) || fetch(event.request);
   }));
 });
 `);

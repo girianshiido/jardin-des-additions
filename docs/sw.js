@@ -1,5 +1,5 @@
 // Generated from the actual release contents.
-const CACHE = 'jardin-additions-318830fedc775c9c';
+const CACHE = 'jardin-additions-a867450ecf133d01';
 const SCOPE = new URL(self.registration.scope);
 const ASSETS = ["./","./assets/index-BMOIyAkL.js","./assets/index-BzaJtJpm.js","./assets/index-CI44mpLS.js","./assets/index-D5U4yK32.css","./assets/index-DHOuN1DD.js","./assets/index-DT1W2C8k.css","./assets/index-DppXRFHT.css","./icons/apple-touch-icon.png","./icons/icon-192.png","./icons/icon-512.png","./icons/icon.svg","./icons/maskable-512.png","./index.html","./manifest.webmanifest"];
 self.addEventListener('install', event => {
@@ -19,6 +19,8 @@ self.addEventListener('fetch', event => {
       } catch { /* Fall back to the complete installed release without a network. */ }
       return (await cache.match('./index.html')) || Response.error();
     }
-    return (await cache.match(event.request)) || fetch(event.request);
+    // These same-origin static files have identical content for every request.
+    // A development server's Vary: Origin must not hide a precached module offline.
+    return (await cache.match(event.request, { ignoreVary: true })) || fetch(event.request);
   }));
 });
