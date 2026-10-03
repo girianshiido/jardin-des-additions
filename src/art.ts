@@ -1,5 +1,6 @@
 export const sprout = `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 39V20" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M24 28C9 29 9 15 9 15c12-2 16 7 15 13Z" fill="currentColor" opacity=".65"/><path d="M24 22c-2-14 14-14 14-14s1 14-14 14Z" fill="currentColor"/></svg>`;
 export const icons: Record<string, string> = {
+  study: '<path d="M5 7c7-2 11 2 11 2s4-4 11-2v20c-7-2-11 2-11 2s-4-4-11-2Z"/><path d="M16 9v20M8 12h4M8 17h4M20 12h4M20 17h4"/>',
   learn: '<path d="M5 7c7-2 11 2 11 2s4-4 11-2v20c-7-2-11 2-11 2s-4-4-11-2Z"/><path d="M16 9v20"/>',
   practice: '<path d="m7 24 2-7L23 3l6 6-14 14-8 1Z"/><path d="m19 7 6 6M6 29h22"/>',
   missing: '<rect x="4" y="4" width="24" height="24" rx="7"/><path d="M12 12a4 4 0 1 1 6 3c-2 1-2 2-2 3M16 23h.01"/>',

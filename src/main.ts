@@ -1,6 +1,7 @@
 import './style.css';
 import { ALL_FACTS, choices, freshProgress, hint, makeDeck, mastered, parseProgress, record, shuffle, type Fact, type Mode, type Progress } from './engine';
 import { garden, icon, sprout } from './art';
+import { createStudy, renderStudy } from './study';
 
 const root = document.querySelector<HTMLDivElement>('#app')!;
 const STORAGE = 'jardin-additions-v1';
@@ -8,14 +9,16 @@ let persistent = true;
 let progress: Progress;
 try { progress = parseProgress(localStorage.getItem(STORAGE)); } catch { progress = freshProgress(); persistent = false; }
 const modes: Record<Mode, { title: string; text: string; tag: string }> = {
+  study: { title: 'J’apprends mes tables', text: 'Lis les additions et leurs réponses, dans l’ordre. Puis cache les résultats pour mémoriser.', tag: 'Pour commencer, même si tu ne connais pas la table' },
   learn: { title: 'Je découvre', text: 'Des petits points pour comprendre et compter.', tag: 'Avec de l’aide' },
   practice: { title: 'Je m’entraîne', text: 'Trouve la somme, à ton rythme.', tag: 'Sans chronomètre' },
   missing: { title: 'Le nombre caché', text: 'Retrouve le nombre qui s’est caché.', tag: 'Petit détective' },
   challenge: { title: 'Le défi minute', text: 'Une minute pour faire fleurir tes additions.', tag: 'Quand tu te sens prête' },
 };
-let view: 'home' | 'game' | 'result' | 'progress' = 'home';
+let view: 'home' | 'study' | 'game' | 'result' | 'progress' = 'home';
 let selected = [1, 2, 3];
-let selectedMode: Mode = 'learn';
+let selectedMode: Mode = 'study';
+let study = createStudy(1);
 try {
   const settings = JSON.parse(localStorage.getItem('jardin-additions-settings') || 'null');
   if (Array.isArray(settings?.tables)) {
@@ -23,9 +26,10 @@ try {
     if (tables.length) selected = tables;
   }
   if (Object.hasOwn(modes, settings?.mode)) selectedMode = settings.mode;
+  if (Number.isInteger(settings?.studyTable) && settings.studyTable >= 1 && settings.studyTable <= 10) study = createStudy(settings.studyTable);
 } catch { /* Optional preferences may be absent or damaged. */ }
-const saveSettings = () => { try { localStorage.setItem('jardin-additions-settings', JSON.stringify({ tables: selected, mode: selectedMode })); } catch { persistent = false; } };
-let game: { mode: Mode; review: Fact[] | null; deck: Fact[]; fact: Fact; options: number[]; hidden: 'a' | 'b'; rounds: number; correct: number; assisted: boolean; failed: boolean; solved: boolean; input: string; wrongOptions: number[]; errors: Fact[]; help: boolean; message: string; remaining: number; paused: boolean; last: number } | null = null;
+const saveSettings = () => { try { localStorage.setItem('jardin-additions-settings', JSON.stringify({ tables: selected, mode: selectedMode, studyTable: study.table })); } catch { persistent = false; } };
+let game: { mode: Exclude<Mode, 'study'>; review: Fact[] | null; deck: Fact[]; fact: Fact; options: number[]; hidden: 'a' | 'b'; rounds: number; correct: number; assisted: boolean; failed: boolean; solved: boolean; input: string; wrongOptions: number[]; errors: Fact[]; help: boolean; message: string; remaining: number; paused: boolean; last: number } | null = null;
 type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 let installEvent: InstallEvent | null = null;
 let offlineReady = false;
@@ -34,20 +38,21 @@ const pill = () => `<span class="status"><span class="status-dot"></span>${offli
 const header = () => `<header class="header"><button class="brand" data-action="home" aria-label="Le Jardin des additions, accueil"><span class="brand-icon">${sprout}</span><span>Le Jardin<span class="brand-sub">DES ADDITIONS</span></span></button><nav aria-label="Navigation"><button class="nav-button ${view === 'progress' ? 'active' : ''}" data-action="progress">${icon('star')}<span>Mon jardin</span></button><button class="nav-button install" data-action="install"><span aria-hidden="true">↓</span><span>Installer</span></button></nav></header>`;
 const footer = () => `<footer><span>De 1 + 0 à 10 + 10 · Apprendre en douceur</span><button data-action="parents">Le coin des parents</button></footer>`;
 function render(focus = false): void {
-  root.innerHTML = `${header()}<main id="main">${view === 'home' ? home() : view === 'game' ? play() : view === 'result' ? result() : gardenProgress()}</main>${footer()}<dialog id="dialog"></dialog>`;
+  root.innerHTML = `${header()}<main id="main">${view === 'home' ? home() : view === 'study' ? renderStudy(study) : view === 'game' ? play() : view === 'result' ? result() : gardenProgress()}</main>${footer()}<dialog id="dialog"></dialog>`;
   if (focus) root.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
 }
 function home(): string {
   const count = mastered(progress);
   return `<section class="hero"><div class="hero-copy"><p class="eyebrow">LE BONHEUR D’APPRENDRE</p><h1 tabindex="-1">Les petits calculs<br>font les <em>grands jardins.</em></h1><p>Un peu de curiosité, quelques additions…<br>et chaque jour, tu grandis !</p>${pill()}</div>${garden}</section>
-  <div class="home-grid"><section class="choose"><div class="section-heading"><div><p class="eyebrow">À TOI DE JOUER</p><h2>Quelle aventure aujourd’hui ?</h2></div><span class="tiny">4 façons d’apprendre</span></div><div class="modes">${(Object.keys(modes) as Mode[]).map(m => `<button class="mode-card ${m} ${selectedMode === m ? 'selected' : ''}" data-mode="${m}" aria-pressed="${selectedMode === m}"><span class="mode-icon">${icon(m)}</span><span class="mode-content"><strong>${modes[m].title}</strong><span>${modes[m].text}</span><small>${modes[m].tag}</small></span><span class="mode-check" aria-hidden="true">${selectedMode === m ? '✓' : '↗'}</span></button>`).join('')}</div>
-  <section class="table-picker"><div class="picker-heading"><h3>Mes tables à explorer</h3><button class="text-button" data-action="all-tables">${selected.length === 10 ? 'Tables 1, 2, 3' : 'Toutes les tables'}</button></div><div class="table-buttons" aria-label="Choisir les tables">${Array.from({ length: 10 }, (_, i) => `<button data-table="${i + 1}" class="table ${selected.includes(i + 1) ? 'chosen' : ''}" aria-pressed="${selected.includes(i + 1)}" aria-label="Table de ${i + 1}">${i + 1}</button>`).join('')}</div><p class="small-note">${selected.length === 10 ? 'Toutes les additions, de 1 + 0 à 10 + 10.' : `Tables ${selected.join(', ')} · Chaque table va de + 0 à + 10.`}</p></section>
-  <button class="primary start" data-action="start">C’est parti ! <span aria-hidden="true">→</span></button><p class="start-note">${selectedMode === 'challenge' ? '60 secondes · Tu peux faire une pause.' : '10 petits calculs · Tout le temps qu’il te faut.'}</p></section>
+  <div class="home-grid"><section class="choose"><div class="section-heading"><div><p class="eyebrow">À TOI DE JOUER</p><h2>Quelle aventure aujourd’hui ?</h2></div><span class="tiny">5 façons d’apprendre</span></div><div class="modes">${(Object.keys(modes) as Mode[]).map(m => `<button class="mode-card ${m} ${selectedMode === m ? 'selected' : ''}" data-mode="${m}" aria-pressed="${selectedMode === m}"><span class="mode-icon">${icon(m)}</span><span class="mode-content"><strong>${modes[m].title}</strong><span>${modes[m].text}</span><small>${modes[m].tag}</small></span><span class="mode-check" aria-hidden="true">${selectedMode === m ? '✓' : '↗'}</span></button>`).join('')}</div>
+  <section class="table-picker"><div class="picker-heading"><h3>${selectedMode === 'study' ? 'La table que je veux apprendre' : 'Mes tables à explorer'}</h3>${selectedMode === 'study' ? '' : `<button class="text-button" data-action="all-tables">${selected.length === 10 ? 'Tables 1, 2, 3' : 'Toutes les tables'}</button>`}</div><div class="table-buttons" aria-label="Choisir les tables">${Array.from({ length: 10 }, (_, i) => `<button data-table="${i + 1}" class="table ${(selectedMode === 'study' ? study.table === i + 1 : selected.includes(i + 1)) ? 'chosen' : ''}" aria-pressed="${selectedMode === 'study' ? study.table === i + 1 : selected.includes(i + 1)}" aria-label="Table de ${i + 1}">${i + 1}</button>`).join('')}</div><p class="small-note">${selectedMode === 'study' ? `De ${study.table} + 0 à ${study.table} + 10, avec toutes les réponses.` : selected.length === 10 ? 'Toutes les additions, de 1 + 0 à 10 + 10.' : `Tables ${selected.join(', ')} · Chaque table va de + 0 à + 10.`}</p></section>
+  <button class="primary start" data-action="start">${selectedMode === 'study' ? 'J’apprends ma table' : 'C’est parti !'} <span aria-hidden="true">→</span></button><p class="start-note">${selectedMode === 'study' ? 'Je lis les réponses, puis je les cache. Sans score ni chronomètre.' : selectedMode === 'challenge' ? '60 secondes · Tu peux faire une pause.' : '10 petits calculs · Tout le temps qu’il te faut.'}</p></section>
   <aside class="growth"><div class="growth-top"><span class="eyebrow">MON PETIT JARDIN</span>${sprout}</div><h2>Ça pousse, ça pousse !</h2><p>Chaque addition apprise est<br>une nouvelle petite fleur.</p><div class="garden-pots" aria-hidden="true">${[0, 1, 2].map((_, i) => `<span class="pot ${count >= (i + 1) * 10 ? 'bloom' : ''}"><span>${count >= (i + 1) * 10 ? '✿' : '♧'}</span><i></i></span>`).join('')}</div><div class="growth-count"><strong>${count}</strong><span>additions bien apprises<br>sur 110</span></div><div class="meter" role="progressbar" aria-label="Additions apprises" aria-valuenow="${count}" aria-valuemin="0" aria-valuemax="110"><span style="width:${count / 110 * 100}%"></span></div><p class="growth-tip">Trois bonnes réponses sans indice<br>pour faire fleurir une addition.</p><button class="secondary" data-action="progress">Voir mon jardin ${icon('star')}</button><div class="encouragement">« Tu n’as pas besoin d’aller vite.<br>Tu as juste besoin d’essayer. »</div></aside></div>`;
 }
 function start(mode = selectedMode, revision?: Fact[]): void {
   selectedMode = mode;
   saveSettings();
+  if (mode === 'study') { study = createStudy(study.table); game = null; view = 'study'; render(true); return; }
   const deck = revision?.length ? shuffle(revision) : makeDeck(selected, progress);
   const fact = deck.shift()!;
   game = { mode, review: revision?.length ? [...revision] : null, deck, fact, options: choices(fact.a + fact.b), hidden: Math.random() < .5 ? 'a' : 'b', rounds: 0, correct: 0, assisted: mode === 'learn', failed: false, solved: false, input: '', wrongOptions: [], errors: [], help: mode === 'learn', message: '', remaining: 60000, paused: false, last: performance.now() };
@@ -134,7 +139,12 @@ root.addEventListener('click', async (event) => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button');
   if (!button || button.disabled) return;
   if (button.dataset.mode) { selectedMode = button.dataset.mode as Mode; saveSettings(); render(); root.querySelector<HTMLElement>(`[data-mode="${selectedMode}"]`)?.focus({ preventScroll: true }); return; }
-  if (button.dataset.table) { const n = Number(button.dataset.table); selected = selected.includes(n) ? selected.length > 1 ? selected.filter(i => i !== n) : selected : [...selected, n].sort((a, b) => a - b); saveSettings(); render(); root.querySelector<HTMLElement>(`[data-table="${n}"]`)?.focus({ preventScroll: true }); return; }
+  if (button.dataset.table) { const n = Number(button.dataset.table); if (selectedMode === 'study') study = createStudy(n); else selected = selected.includes(n) ? selected.length > 1 ? selected.filter(i => i !== n) : selected : [...selected, n].sort((a, b) => a - b); saveSettings(); render(); root.querySelector<HTMLElement>(`[data-table="${n}"]`)?.focus({ preventScroll: true }); return; }
+  if (button.dataset.studyTable) { study = createStudy(Number(button.dataset.studyTable)); saveSettings(); render(true); return; }
+  if (button.dataset.studyPhase) { study.masked = button.dataset.studyPhase === 'recall'; study.revealed.clear(); render(); root.querySelector<HTMLElement>(`[data-study-phase="${button.dataset.studyPhase}"]`)?.focus({ preventScroll: true }); return; }
+  if (button.dataset.studyTerm !== undefined) { study.term = Number(button.dataset.studyTerm); render(); root.querySelector<HTMLElement>(`[data-study-term="${study.term}"]`)?.focus({ preventScroll: true }); return; }
+  if (button.dataset.studyStep) { study.term = Math.max(0, Math.min(10, study.term + Number(button.dataset.studyStep))); render(); root.querySelector<HTMLElement>(`[data-study-step="${button.dataset.studyStep}"]:not(:disabled)`)?.focus({ preventScroll: true }); return; }
+  if (button.dataset.studyReveal) { if (button.dataset.studyReveal === 'true') study.revealed.add(study.term); else study.revealed.delete(study.term); render(); root.querySelector<HTMLElement>('[data-study-reveal]')?.focus({ preventScroll: true }); return; }
   if (button.dataset.answer !== undefined) { answer(Number(button.dataset.answer)); return; }
   if (button.dataset.key) { handleKey(button.dataset.key); return; }
   if (button.dataset.fact) { const f = ALL_FACTS.find(f => f.key === button.dataset.fact)!; dialog(`<h2>${f.a} + ${f.b} = ${f.a + f.b}</h2><div class="counting">${dots(f.a, 'mint')}<span>+</span>${dots(f.b, 'peach')}</div><p>${hint(f)}</p>`); return; }
@@ -144,6 +154,7 @@ root.addEventListener('click', async (event) => {
       view = button.dataset.action === 'home' ? 'home' : 'progress'; render(true); break;
     case 'all-tables': selected = selected.length === 10 ? [1, 2, 3] : Array.from({ length: 10 }, (_, i) => i + 1); saveSettings(); render(); break;
     case 'start': start(); break;
+    case 'study-practice': selected = [study.table]; start('practice'); break;
     case 'next': next(); break;
     case 'hint': game!.help = true; game!.assisted = true; render(); break;
     case 'pause': game!.paused = !game!.paused; game!.last = performance.now(); render(); break;
@@ -155,7 +166,7 @@ root.addEventListener('click', async (event) => {
       if (installEvent) { await installEvent.prompt(); await installEvent.userChoice; installEvent = null; }
       else dialog('<p class="eyebrow">TON JARDIN À PORTÉE DE MAIN</p><h2>Installer le jeu</h2><p><strong>Sur iPhone ou iPad :</strong> ouvre ce jeu dans Safari, touche Partager, puis « Sur l’écran d’accueil ». Active « Ouvrir comme app web » si cette option apparaît.</p><p><strong>Sur Android :</strong> ouvre ce jeu dans Chrome, puis le menu ⋮ et « Installer l’application » ou « Ajouter à l’écran d’accueil ».</p><p>Ouvre le jeu une première fois avec Internet et attends « Prêt hors connexion ». Tu pourras ensuite jouer sans réseau. La progression reste sur cet appareil.</p>');
       break;
-    case 'parents': dialog(`<p class="eyebrow">LE COIN DES PARENTS</p><h2>Apprendre à son rythme</h2><p>Le jeu travaille les 110 additions de 1 + 0 à 10 + 10. Commencez par quelques tables, puis ajoutez-en progressivement.</p><p>Une fleur correspond à trois réponses consécutives justes, sans indice et du premier coup. Les erreurs reviennent après quelques calculs. Le mode découverte ne modifie pas les fleurs.</p><p>Le défi dure 60 secondes, avec une pause possible. Il se met en pause quand l’application passe en arrière-plan. Record : ${progress.best} réponses.</p><p>${persistent ? 'La progression est enregistrée uniquement sur cet appareil, dans ce navigateur. Aucun compte, aucune publicité ni suivi.' : 'Le navigateur bloque la sauvegarde : la progression ne sera conservée que pendant cette visite.'}</p><button class="danger" data-action="reset">Effacer la progression…</button>`); break;
+    case 'parents': dialog(`<p class="eyebrow">LE COIN DES PARENTS</p><h2>Apprendre à son rythme</h2><p>Le jeu travaille les 110 additions de 1 + 0 à 10 + 10. Commencez par « J’apprends mes tables » : toutes les réponses sont présentées dans l’ordre et expliquées avec des points numérotés. Votre enfant peut ensuite cacher les résultats et les révéler à son rythme, sans évaluation.</p><p>Une fleur correspond à trois réponses consécutives justes, sans indice et du premier coup. Les erreurs reviennent après quelques calculs. Lire ou révéler une réponse dans le mode d’apprentissage ne modifie pas les fleurs ni les scores. Le mode découverte ne modifie pas les fleurs.</p><p>Le défi dure 60 secondes, avec une pause possible. Il se met en pause quand l’application passe en arrière-plan. Record : ${progress.best} réponses.</p><p>${persistent ? 'La progression est enregistrée uniquement sur cet appareil, dans ce navigateur. Aucun compte, aucune publicité ni suivi.' : 'Le navigateur bloque la sauvegarde : la progression ne sera conservée que pendant cette visite.'}</p><button class="danger" data-action="reset">Effacer la progression…</button>`); break;
     case 'reset': dialog('<h2>Recommencer le jardin ?</h2><p>Les fleurs, étoiles et records de cet appareil seront effacés.</p><button class="danger" data-action="confirm-reset">Oui, effacer la progression</button>'); break;
     case 'confirm-reset': progress = freshProgress(); save(); view = 'home'; game = null; render(true); break;
   }

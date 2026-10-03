@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ALL_FACTS, choices, freshProgress, makeDeck, mastered, parseProgress, record, hint } from '../src/engine.ts';
+import { ALL_FACTS, choices, countingSteps, freshProgress, makeDeck, mastered, parseProgress, record, hint, studyTable } from '../src/engine.ts';
 function seeded(seed: number) { return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
 test('exactly 110 distinct additions cover every requested ordered pair', () => {
   assert.equal(ALL_FACTS.length, 110);
@@ -50,4 +50,30 @@ test('hints handle adding zero and bridging ten with nonnegative parts', () => {
   assert.match(hint({ a: 8, b: 0, key: '8+0' }), /Ajouter 0/);
   assert.match(hint({ a: 8, b: 5, key: '8+5' }), /2 et 3/);
   assert.match(hint({ a: 4, b: 4, key: '4+4' }), /double/);
+});
+test('learning presents complete ordered tables, whose results increase by one', () => {
+  const displayed = [];
+  for (let table = 1; table <= 10; table++) {
+    const rows = studyTable(table);
+    assert.equal(rows.length, 11);
+    assert.equal(rows[0].b, 0); assert.equal(rows[10].b, 10);
+    for (let i = 1; i < rows.length; i++) {
+      assert.equal(rows[i].b, rows[i - 1].b + 1);
+      assert.equal(rows[i].a + rows[i].b, rows[i - 1].a + rows[i - 1].b + 1);
+    }
+    displayed.push(...rows.map(f => f.key));
+  }
+  assert.equal(new Set(displayed).size, 110);
+});
+test('numbered added points continue counting from the first term through the sum', () => {
+  for (const fact of ALL_FACTS) {
+    const added = countingSteps(fact);
+    assert.equal(added.length, fact.b);
+    if (fact.b === 0) assert.deepEqual(added, []);
+    else {
+      assert.equal(added[0], fact.a + 1);
+      assert.equal(added.at(-1), fact.a + fact.b);
+      for (let i = 1; i < added.length; i++) assert.equal(added[i], added[i - 1] + 1);
+    }
+  }
 });

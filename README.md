@@ -6,12 +6,13 @@ Un jeu en TypeScript pour apprendre les **110 additions de 1 + 0 à 10 + 10**. A
 
 **https://girianshiido.github.io/jardin-des-additions/**
 
+- **J’apprends mes tables** : lire une table complète dans l’ordre, de + 0 à + 10, avec toutes les réponses. Des points numérotés expliquent chaque addition et le passage à la ligne suivante. Cacher les résultats, puis les révéler individuellement pour mémoriser à son rythme, sans score ni chronomètre. Passer ensuite à l’entraînement sur cette même table.
 - **Je découvre** : compter deux groupes de points et choisir la somme.
 - **Je m’entraîne** : saisir la somme avec le clavier tactile ou physique.
 - **Le nombre caché** : compléter l’un des deux termes de l’addition.
 - **Le défi minute** : trouver des sommes pendant 60 secondes. Pause manuelle et automatique en arrière-plan.
 
-Sélection des tables de 1 à 10 ; le second terme va toujours de 0 à 10. Les parties sans chronomètre comptent 10 calculs. Les calculs moins maîtrisés arrivent en premier ; une erreur revient après quelques questions. Un indice ou une réponse corrigée ne donne pas une fleur : il faut trois réponses consécutives justes, autonomes et du premier coup. La découverte ne modifie pas la maîtrise. Les étoiles récompensent les découvertes ou les bonnes réponses autonomes.
+Sélection des tables de 1 à 10 ; le second terme va toujours de 0 à 10. L’apprentissage présente les 11 lignes de la table choisie ; les parties d’exercices sans chronomètre comptent 10 calculs. Les calculs moins maîtrisés arrivent en premier ; une erreur revient après quelques questions. Un indice ou une réponse corrigée ne donne pas une fleur : il faut trois réponses consécutives justes, autonomes et du premier coup. La lecture et la mémorisation des tables ne modifient pas les scores ou la maîtrise. La découverte ne modifie pas la maîtrise. Les étoiles récompensent les découvertes ou les bonnes réponses autonomes.
 
 ## Installer sur téléphone
 

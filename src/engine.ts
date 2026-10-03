@@ -1,8 +1,10 @@
-export type Mode = 'learn' | 'practice' | 'missing' | 'challenge';
+export type Mode = 'study' | 'learn' | 'practice' | 'missing' | 'challenge';
 export type Fact = { a: number; b: number; key: string };
 export type Memory = { attempts: number; streak: number; correct: number };
 export type Progress = { version: 1; facts: Record<string, Memory>; sessions: number; stars: number; best: number };
 export const ALL_FACTS: Fact[] = Array.from({ length: 10 }, (_, i) => Array.from({ length: 11 }, (_, b) => ({ a: i + 1, b, key: `${i + 1}+${b}` }))).flat();
+export const studyTable = (table: number): Fact[] => ALL_FACTS.filter(f => f.a === table);
+export const countingSteps = (f: Fact): number[] => Array.from({ length: f.b }, (_, i) => f.a + i + 1);
 export const freshProgress = (): Progress => ({ version: 1, facts: {}, sessions: 0, stars: 0, best: 0 });
 export function parseProgress(raw: string | null): Progress {
   try {
