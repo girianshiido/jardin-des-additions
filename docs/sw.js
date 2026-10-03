@@ -1,7 +1,7 @@
 // Generated from the actual release contents.
-const CACHE = 'jardin-additions-a867450ecf133d01';
+const CACHE = 'jardin-additions-1bc81726f1ed1267';
 const SCOPE = new URL(self.registration.scope);
-const ASSETS = ["./","./assets/index-BMOIyAkL.js","./assets/index-BzaJtJpm.js","./assets/index-CI44mpLS.js","./assets/index-D5U4yK32.css","./assets/index-DHOuN1DD.js","./assets/index-DT1W2C8k.css","./assets/index-DppXRFHT.css","./icons/apple-touch-icon.png","./icons/icon-192.png","./icons/icon-512.png","./icons/icon.svg","./icons/maskable-512.png","./index.html","./manifest.webmanifest"];
+const ASSETS = ["./","./assets/index-BMOIyAkL.js","./assets/index-BzaJtJpm.js","./assets/index-CI44mpLS.js","./assets/index-D5U4yK32.css","./assets/index-DHOuN1DD.js","./assets/index-DT1W2C8k.css","./assets/index-DUZbJHIv.js","./assets/index-DppXRFHT.css","./icons/apple-touch-icon.png","./icons/icon-192.png","./icons/icon-512.png","./icons/icon.svg","./icons/maskable-512.png","./index.html","./manifest.webmanifest"];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

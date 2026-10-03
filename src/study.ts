@@ -11,7 +11,7 @@ function numberedPoints(values: number[], color: string, label: string): string 
 function explanation(f: Fact): string {
   const steps = countingSteps(f);
   return `<div class="study-counting">${numberedPoints(Array.from({ length: f.a }, (_, i) => i + 1), 'mint', `Je commence avec ${f.a}.`)}${numberedPoints(steps, 'peach', f.b === 0 ? 'Je n’ajoute aucun point.' : `J’ajoute ${f.b} point${f.b > 1 ? 's' : ''}.`)}</div>
-    <div class="study-explanation"><p>${f.b === 0 ? `Ajouter 0 ne change rien : je garde ${f.a}.` : `Je pars de ${f.a}, puis je compte ${steps.join(', ')}.`}</p><strong>Il y a ${f.a + f.b} points en tout.</strong></div>
+    <div class="study-explanation"><p>${f.b === 0 ? `Ajouter 0 ne change rien : je garde ${f.a}.` : `Je pars de ${f.a}, puis je compte ${steps.join(', ')}.`}</p><strong>Il y a ${f.a + f.b} point${f.a + f.b > 1 ? 's' : ''} en tout.</strong></div>
     ${f.b < 10 ? `<p class="study-pattern">Pour passer à la ligne suivante, j’ajoute 1 au résultat :<br><strong>${f.a + f.b} + 1 = ${f.a + f.b + 1}</strong></p>` : '<p class="study-pattern">Tu as parcouru toute la table, de + 0 à + 10. Tu peux la relire autant que tu veux.</p>'}`;
 }
 
