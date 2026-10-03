@@ -34,6 +34,6 @@ pnpm build
 pnpm preview
 ```
 
-Le code du jeu est dans `src/`. Le moteur pédagogique est indépendant de l’interface dans `src/engine.ts`. La compilation produit `docs/`, publié sur GitHub Pages depuis `main:/docs`. Les chemins relatifs permettent le déploiement dans un sous-répertoire. Le service worker est généré après la compilation et précache les vrais fichiers de la version ; son nom de cache dépend de leur contenu. Une mise à jour attend la fermeture des fenêtres du jeu avant de s’activer.
+Le code du jeu est dans `src/`. Le moteur pédagogique est indépendant de l’interface dans `src/engine.ts`. La compilation produit `docs/`, publié sur GitHub Pages depuis `main:/docs`. Les chemins relatifs permettent le déploiement dans un sous-répertoire. Le service worker est généré après la compilation et précache les vrais fichiers de la version ; son nom de cache dépend de leur contenu. Une mise à jour ne s’active qu’après le téléchargement complet des nouveaux fichiers. Les parties déjà ouvertes continuent normalement ; recharger le jeu affiche ensuite la nouvelle version. La vérification des mises à jour contourne le cache du navigateur.
 
 Les tests du moteur contrôlent la couverture complète des additions, la variété des choix et des parties, la progression et la résistance aux sauvegardes endommagées. Le workflow GitHub contrôle les tests, le typage et la reproductibilité du site compilé.

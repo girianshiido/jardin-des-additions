@@ -180,7 +180,8 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); instal
 window.addEventListener('appinstalled', () => { installEvent = null; });
 render();
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  navigator.serviceWorker.register('./sw.js').then(async () => {
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(async registration => {
+    void registration.update().catch(() => { /* The installed version stays usable offline. */ });
     await navigator.serviceWorker.ready;
     offlineReady = true;
     if (view === 'home') render();
