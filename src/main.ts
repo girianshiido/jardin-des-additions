@@ -1,7 +1,8 @@
 import './style.css';
 import { ALL_FACTS, choices, freshProgress, hint, makeDeck, mastered, parseProgress, record, shuffle, type Fact, type Mode, type Progress } from './engine';
 import { garden, icon, sprout } from './art';
-import { createStudy, renderStudy } from './study';
+import { audioMessage, createStudy, renderStudy } from './study';
+import { TableReader } from './audio';
 
 const root = document.querySelector<HTMLDivElement>('#app')!;
 const STORAGE = 'jardin-additions-v1';
@@ -9,7 +10,7 @@ let persistent = true;
 let progress: Progress;
 try { progress = parseProgress(localStorage.getItem(STORAGE)); } catch { progress = freshProgress(); persistent = false; }
 const modes: Record<Mode, { title: string; text: string; tag: string }> = {
-  study: { title: 'J’apprends mes tables', text: 'Lis les additions et leurs réponses, dans l’ordre. Puis cache les résultats pour mémoriser.', tag: 'Pour commencer, même si tu ne connais pas la table' },
+  study: { title: 'J’apprends mes tables', text: 'Lis ou écoute les additions et leurs réponses, dans l’ordre. Puis cache les résultats pour mémoriser.', tag: 'Pour commencer, même si tu ne connais pas la table' },
   learn: { title: 'Je découvre', text: 'Des petits points pour comprendre et compter.', tag: 'Avec de l’aide' },
   practice: { title: 'Je m’entraîne', text: 'Trouve la somme, à ton rythme.', tag: 'Sans chronomètre' },
   missing: { title: 'Le nombre caché', text: 'Retrouve le nombre qui s’est caché.', tag: 'Petit détective' },
@@ -19,6 +20,7 @@ let view: 'home' | 'study' | 'game' | 'result' | 'progress' = 'home';
 let selected = [1, 2, 3];
 let selectedMode: Mode = 'study';
 let study = createStudy(1);
+let automaticReading = false;
 try {
   const settings = JSON.parse(localStorage.getItem('jardin-additions-settings') || 'null');
   if (Array.isArray(settings?.tables)) {
@@ -27,8 +29,38 @@ try {
   }
   if (Object.hasOwn(modes, settings?.mode)) selectedMode = settings.mode;
   if (Number.isInteger(settings?.studyTable) && settings.studyTable >= 1 && settings.studyTable <= 10) study = createStudy(settings.studyTable);
+  automaticReading = settings?.automaticReading === true;
 } catch { /* Optional preferences may be absent or damaged. */ }
-const saveSettings = () => { try { localStorage.setItem('jardin-additions-settings', JSON.stringify({ tables: selected, mode: selectedMode, studyTable: study.table })); } catch { persistent = false; } };
+const saveSettings = () => { try { localStorage.setItem('jardin-additions-settings', JSON.stringify({ tables: selected, mode: selectedMode, studyTable: study.table, automaticReading })); } catch { persistent = false; } };
+const voice = document.createElement('audio');
+voice.id = 'table-voice';
+voice.hidden = true;
+document.body.append(voice);
+const reader = new TableReader(voice, status => {
+  if (view !== 'study') return;
+  const message = root.querySelector('#audio-status');
+  if (message) message.textContent = audioMessage(study, status);
+  const pause = root.querySelector<HTMLButtonElement>('[data-action="audio-stop"]');
+  if (pause) pause.disabled = status === 'idle' || status === 'error';
+});
+function readStudy(): void {
+  if (view !== 'study' || document.hidden || root.querySelector('dialog[open]') || (study.masked && !study.revealed.has(study.term))) return;
+  reader.read(study.table, study.term, automaticReading && !study.masked && study.term < 10 ? () => {
+    if (view !== 'study' || document.hidden || study.masked || !automaticReading || root.querySelector('dialog[open]')) { reader.stop(); return; }
+    const focused = document.activeElement;
+    const attribute = focused instanceof HTMLButtonElement ? ['data-action', 'data-study-table', 'data-study-phase', 'data-study-term', 'data-study-step'].find(name => focused.hasAttribute(name)) : undefined;
+    const focusSelector = attribute ? `[${attribute}="${CSS.escape(focused!.getAttribute(attribute)!)}"]:not(:disabled)` : null;
+    study.term++;
+    render();
+    if (focusSelector) root.querySelector<HTMLElement>(focusSelector)?.focus({ preventScroll: true });
+    readStudy();
+  } : undefined);
+}
+function refreshStudy(): void {
+  reader.stop();
+  render();
+  if (automaticReading) readStudy();
+}
 let game: { mode: Exclude<Mode, 'study'>; review: Fact[] | null; deck: Fact[]; fact: Fact; options: number[]; hidden: 'a' | 'b'; rounds: number; correct: number; assisted: boolean; failed: boolean; solved: boolean; input: string; wrongOptions: number[]; errors: Fact[]; help: boolean; message: string; remaining: number; paused: boolean; last: number } | null = null;
 type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 let installEvent: InstallEvent | null = null;
@@ -38,7 +70,8 @@ const pill = () => `<span class="status"><span class="status-dot"></span>${offli
 const header = () => `<header class="header"><button class="brand" data-action="home" aria-label="Le Jardin des additions, accueil"><span class="brand-icon">${sprout}</span><span>Le Jardin<span class="brand-sub">DES ADDITIONS</span></span></button><nav aria-label="Navigation"><button class="nav-button ${view === 'progress' ? 'active' : ''}" data-action="progress">${icon('star')}<span>Mon jardin</span></button><button class="nav-button install" data-action="install"><span aria-hidden="true">↓</span><span>Installer</span></button></nav></header>`;
 const footer = () => `<footer><span>De 1 + 0 à 10 + 10 · Apprendre en douceur</span><button data-action="parents">Le coin des parents</button></footer>`;
 function render(focus = false): void {
-  root.innerHTML = `${header()}<main id="main">${view === 'home' ? home() : view === 'study' ? renderStudy(study) : view === 'game' ? play() : view === 'result' ? result() : gardenProgress()}</main>${footer()}<dialog id="dialog"></dialog>`;
+  if (view !== 'study' && reader.status !== 'idle') reader.stop();
+  root.innerHTML = `${header()}<main id="main">${view === 'home' ? home() : view === 'study' ? renderStudy(study, automaticReading, reader.status) : view === 'game' ? play() : view === 'result' ? result() : gardenProgress()}</main>${footer()}<dialog id="dialog"></dialog>`;
   if (focus) root.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
 }
 function home(): string {
@@ -52,7 +85,7 @@ function home(): string {
 function start(mode = selectedMode, revision?: Fact[]): void {
   selectedMode = mode;
   saveSettings();
-  if (mode === 'study') { study = createStudy(study.table); game = null; view = 'study'; render(true); return; }
+  if (mode === 'study') { reader.stop(); study = createStudy(study.table); game = null; view = 'study'; render(true); if (automaticReading) readStudy(); return; }
   const deck = revision?.length ? shuffle(revision) : makeDeck(selected, progress);
   const fact = deck.shift()!;
   game = { mode, review: revision?.length ? [...revision] : null, deck, fact, options: choices(fact.a + fact.b), hidden: Math.random() < .5 ? 'a' : 'b', rounds: 0, correct: 0, assisted: mode === 'learn', failed: false, solved: false, input: '', wrongOptions: [], errors: [], help: mode === 'learn', message: '', remaining: 60000, paused: false, last: performance.now() };
@@ -123,6 +156,7 @@ function gardenProgress(): string {
   return `<section class="progress-page"><p class="eyebrow">CHAQUE PETIT PAS COMPTE</p><h1 tabindex="-1">Mon jardin d’additions</h1><p>${mastered(progress)} fleurs sur 110 · ${progress.stars} étoiles récoltées · ${progress.sessions} parties terminées</p><div class="legend"><span>○ À découvrir</span><span class="growing">◔ En train de pousser</span><span class="flowered">✿ Bien apprise</span></div><div class="matrix-wrap"><table class="matrix"><caption>Mes tables : trois bonnes réponses consécutives sans indice pour faire fleurir une case.</caption><thead><tr><th scope="col">+</th>${Array.from({ length: 11 }, (_, b) => `<th scope="col">${b}</th>`).join('')}</tr></thead><tbody>${Array.from({ length: 10 }, (_, i) => `<tr><th scope="row">${i + 1}</th>${Array.from({ length: 11 }, (_, b) => { const f = ALL_FACTS.find(f => f.a === i + 1 && f.b === b)!; const n = progress.facts[f.key]?.streak || 0; return `<td><button class="fact-cell ${n >= 3 ? 'flowered' : n ? 'growing' : ''}" data-fact="${f.key}" aria-label="${f.a} plus ${f.b}, ${n} bonnes réponses consécutives sur 3"><span aria-hidden="true">${n >= 3 ? '✿' : n ? '◔' : '○'}</span></button></td>`; }).join('')}</tr>`).join('')}</tbody></table></div><p class="small-note">Touche une case pour revoir son addition et une astuce.</p><button class="primary" data-action="home">Choisir une aventure →</button></section>`;
 }
 function dialog(content: string): void {
+  reader.stop();
   const d = root.querySelector<HTMLDialogElement>('#dialog')!;
   d.innerHTML = `${content}<button class="secondary" data-action="close">Fermer</button>`;
   d.showModal();
@@ -140,15 +174,18 @@ root.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   if (button.dataset.mode) { selectedMode = button.dataset.mode as Mode; saveSettings(); render(); root.querySelector<HTMLElement>(`[data-mode="${selectedMode}"]`)?.focus({ preventScroll: true }); return; }
   if (button.dataset.table) { const n = Number(button.dataset.table); if (selectedMode === 'study') study = createStudy(n); else selected = selected.includes(n) ? selected.length > 1 ? selected.filter(i => i !== n) : selected : [...selected, n].sort((a, b) => a - b); saveSettings(); render(); root.querySelector<HTMLElement>(`[data-table="${n}"]`)?.focus({ preventScroll: true }); return; }
-  if (button.dataset.studyTable) { study = createStudy(Number(button.dataset.studyTable)); saveSettings(); render(true); return; }
-  if (button.dataset.studyPhase) { study.masked = button.dataset.studyPhase === 'recall'; study.revealed.clear(); render(); root.querySelector<HTMLElement>(`[data-study-phase="${button.dataset.studyPhase}"]`)?.focus({ preventScroll: true }); return; }
-  if (button.dataset.studyTerm !== undefined) { study.term = Number(button.dataset.studyTerm); render(); root.querySelector<HTMLElement>(`[data-study-term="${study.term}"]`)?.focus({ preventScroll: true }); return; }
-  if (button.dataset.studyStep) { study.term = Math.max(0, Math.min(10, study.term + Number(button.dataset.studyStep))); render(); root.querySelector<HTMLElement>(`[data-study-step="${button.dataset.studyStep}"]:not(:disabled)`)?.focus({ preventScroll: true }); return; }
-  if (button.dataset.studyReveal) { if (button.dataset.studyReveal === 'true') study.revealed.add(study.term); else study.revealed.delete(study.term); render(); root.querySelector<HTMLElement>('[data-study-reveal]')?.focus({ preventScroll: true }); return; }
+  if (button.dataset.studyTable) { study = createStudy(Number(button.dataset.studyTable)); saveSettings(); refreshStudy(); return; }
+  if (button.dataset.studyPhase) { study.masked = button.dataset.studyPhase === 'recall'; study.revealed.clear(); refreshStudy(); root.querySelector<HTMLElement>(`[data-study-phase="${button.dataset.studyPhase}"]`)?.focus({ preventScroll: true }); return; }
+  if (button.dataset.studyTerm !== undefined) { study.term = Number(button.dataset.studyTerm); refreshStudy(); root.querySelector<HTMLElement>(`[data-study-term="${study.term}"]`)?.focus({ preventScroll: true }); return; }
+  if (button.dataset.studyStep) { study.term = Math.max(0, Math.min(10, study.term + Number(button.dataset.studyStep))); refreshStudy(); root.querySelector<HTMLElement>(`[data-study-step="${button.dataset.studyStep}"]:not(:disabled)`)?.focus({ preventScroll: true }); return; }
+  if (button.dataset.studyReveal) { if (button.dataset.studyReveal === 'true') study.revealed.add(study.term); else study.revealed.delete(study.term); refreshStudy(); root.querySelector<HTMLElement>('[data-study-reveal]')?.focus({ preventScroll: true }); return; }
   if (button.dataset.answer !== undefined) { answer(Number(button.dataset.answer)); return; }
   if (button.dataset.key) { handleKey(button.dataset.key); return; }
   if (button.dataset.fact) { const f = ALL_FACTS.find(f => f.key === button.dataset.fact)!; dialog(`<h2>${f.a} + ${f.b} = ${f.a + f.b}</h2><div class="counting">${dots(f.a, 'mint')}<span>+</span>${dots(f.b, 'peach')}</div><p>${hint(f)}</p>`); return; }
   switch (button.dataset.action) {
+    case 'audio-toggle': automaticReading = !automaticReading; saveSettings(); reader.stop(); render(); root.querySelector<HTMLElement>('[data-action="audio-toggle"]')?.focus({ preventScroll: true }); if (automaticReading) readStudy(); break;
+    case 'audio-read': readStudy(); break;
+    case 'audio-stop': reader.stop(); break;
     case 'home': case 'progress':
       if (view === 'game') { dialog('<h2>Quitter cette partie ?</h2><p>Tes additions déjà travaillées sont sauvegardées. Tu pourras commencer une nouvelle partie.</p><button class="primary" data-action="confirm-quit">Quitter la partie</button>'); break; }
       view = button.dataset.action === 'home' ? 'home' : 'progress'; render(true); break;
@@ -166,7 +203,7 @@ root.addEventListener('click', async (event) => {
       if (installEvent) { await installEvent.prompt(); await installEvent.userChoice; installEvent = null; }
       else dialog('<p class="eyebrow">TON JARDIN À PORTÉE DE MAIN</p><h2>Installer le jeu</h2><p><strong>Sur iPhone ou iPad :</strong> ouvre ce jeu dans Safari, touche Partager, puis « Sur l’écran d’accueil ». Active « Ouvrir comme app web » si cette option apparaît.</p><p><strong>Sur Android :</strong> ouvre ce jeu dans Chrome, puis le menu ⋮ et « Installer l’application » ou « Ajouter à l’écran d’accueil ».</p><p>Ouvre le jeu une première fois avec Internet et attends « Prêt hors connexion ». Tu pourras ensuite jouer sans réseau. La progression reste sur cet appareil.</p>');
       break;
-    case 'parents': dialog(`<p class="eyebrow">LE COIN DES PARENTS</p><h2>Apprendre à son rythme</h2><p>Le jeu travaille les 110 additions de 1 + 0 à 10 + 10. Commencez par « J’apprends mes tables » : toutes les réponses sont présentées dans l’ordre et expliquées avec des points numérotés. Votre enfant peut ensuite cacher les résultats et les révéler à son rythme, sans évaluation.</p><p>Une fleur correspond à trois réponses consécutives justes, sans indice et du premier coup. Les erreurs reviennent après quelques calculs. Lire ou révéler une réponse dans le mode d’apprentissage ne modifie pas les fleurs ni les scores. Le mode découverte ne modifie pas les fleurs.</p><p>Le défi dure 60 secondes, avec une pause possible. Il se met en pause quand l’application passe en arrière-plan. Record : ${progress.best} réponses.</p><p>${persistent ? 'La progression est enregistrée uniquement sur cet appareil, dans ce navigateur. Aucun compte, aucune publicité ni suivi.' : 'Le navigateur bloque la sauvegarde : la progression ne sera conservée que pendant cette visite.'}</p><button class="danger" data-action="reset">Effacer la progression…</button>`); break;
+    case 'parents': dialog(`<p class="eyebrow">LE COIN DES PARENTS</p><h2>Apprendre à son rythme</h2><p>Le jeu travaille les 110 additions de 1 + 0 à 10 + 10. Commencez par « J’apprends mes tables » : toutes les réponses sont présentées dans l’ordre et expliquées avec des points numérotés. Votre enfant peut ensuite cacher les résultats et les révéler à son rythme, sans évaluation.</p><p>La lecture sonore utilise les enregistrements de <a href="https://lingualibre.org/wiki/Q142683" target="_blank" rel="noopener">Poslovitch sur Lingua Libre</a>. « 3 + 5 = 8 » se lit « trois plus cinq, huit ». Activez « Lecture automatique » pour parcourir la table avec une pause entre les lignes ; le choix est conservé sur cet appareil. Les résultats cachés ne sont pas lus avant d’être révélés. Les sons fonctionnent aussi hors connexion après le premier chargement. <a href="./audio/CREDITS.txt" target="_blank" rel="noopener">Sources et licences des sons</a>.</p><p>Une fleur correspond à trois réponses consécutives justes, sans indice et du premier coup. Les erreurs reviennent après quelques calculs. Lire ou révéler une réponse dans le mode d’apprentissage ne modifie pas les fleurs ni les scores. Le mode découverte ne modifie pas les fleurs.</p><p>Le défi dure 60 secondes, avec une pause possible. Il se met en pause quand l’application passe en arrière-plan. Record : ${progress.best} réponses.</p><p>${persistent ? 'La progression est enregistrée uniquement sur cet appareil, dans ce navigateur. Aucun compte, aucune publicité ni suivi.' : 'Le navigateur bloque la sauvegarde : la progression ne sera conservée que pendant cette visite.'}</p><button class="danger" data-action="reset">Effacer la progression…</button>`); break;
     case 'reset': dialog('<h2>Recommencer le jardin ?</h2><p>Les fleurs, étoiles et records de cet appareil seront effacés.</p><button class="danger" data-action="confirm-reset">Oui, effacer la progression</button>'); break;
     case 'confirm-reset': progress = freshProgress(); save(); view = 'home'; game = null; render(true); break;
   }
@@ -186,7 +223,8 @@ setInterval(() => {
   const timer = root.querySelector('#timer'); if (timer) timer.textContent = String(Math.ceil(g.remaining / 1000));
   const track = root.querySelector<HTMLElement>('.round-track span'); if (track) track.style.width = `${g.remaining / 600}%`;
 }, 150);
-document.addEventListener('visibilitychange', () => { if (game?.mode === 'challenge' && view === 'game') { game.paused = true; game.last = performance.now(); render(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) reader.stop(); if (game?.mode === 'challenge' && view === 'game') { game.paused = true; game.last = performance.now(); render(); } });
+window.addEventListener('pagehide', () => reader.stop());
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvent = e as InstallEvent; });
 window.addEventListener('appinstalled', () => { installEvent = null; });
 render();

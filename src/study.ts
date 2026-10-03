@@ -1,5 +1,6 @@
 import './study.css';
 import { countingSteps, studyTable, type Fact } from './engine';
+import type { ReadingStatus } from './audio';
 
 export type StudyState = { table: number; term: number; masked: boolean; revealed: Set<number> };
 export const createStudy = (table: number): StudyState => ({ table, term: 0, masked: false, revealed: new Set() });
@@ -15,7 +16,7 @@ function explanation(f: Fact): string {
     ${f.b < 10 ? `<p class="study-pattern">Pour passer à la ligne suivante, j’ajoute 1 au résultat :<br><strong>${f.a + f.b} + 1 = ${f.a + f.b + 1}</strong></p>` : '<p class="study-pattern">Tu as parcouru toute la table, de + 0 à + 10. Tu peux la relire autant que tu veux.</p>'}`;
 }
 
-export function renderStudy(state: StudyState): string {
+export function renderStudy(state: StudyState, automatic = false, reading: ReadingStatus = 'idle'): string {
   const facts = studyTable(state.table);
   const f = facts[state.term];
   const visible = !state.masked || state.revealed.has(state.term);
@@ -24,6 +25,13 @@ export function renderStudy(state: StudyState): string {
     <div class="study-table-picker" aria-label="Choisir une table à apprendre">${Array.from({ length: 10 }, (_, i) => `<button class="table ${state.table === i + 1 ? 'chosen' : ''}" data-study-table="${i + 1}" aria-label="Apprendre la table de ${i + 1}" aria-pressed="${state.table === i + 1}">${i + 1}</button>`).join('')}</div>
     <div class="study-tabs" aria-label="Façon d’apprendre"><button data-study-phase="read" aria-pressed="${!state.masked}" class="${!state.masked ? 'chosen' : ''}">1. Je lis la table</button><button data-study-phase="recall" aria-pressed="${state.masked}" class="${state.masked ? 'chosen' : ''}">2. Je cache les résultats</button></div>
     <p class="study-instructions">${state.masked ? 'Essaie de retrouver un résultat dans ta tête, puis affiche la réponse pour vérifier tranquillement.' : 'Les réponses sont déjà écrites. Lis chaque ligne et regarde comment le résultat grandit de 1.'}</p>
+    <section class="study-audio" aria-label="Écouter la table">
+      <div><h2>J’apprends aussi en écoutant</h2><p>Une voix lit chaque addition, puis te laisse le temps de la répéter.</p></div>
+      <button class="audio-toggle" data-action="audio-toggle" role="switch" aria-checked="${automatic}" aria-label="Lecture automatique"><span aria-hidden="true">${automatic ? '🔊' : '🔈'}</span> Lecture automatique : ${automatic ? 'activée' : 'désactivée'}</button>
+      <div class="audio-actions"><button class="secondary" data-action="audio-read" ${!visible ? 'disabled' : ''}>${!state.masked && automatic ? 'Écouter la table d’ici' : 'Écouter cette addition'}</button><button class="text-button" data-action="audio-stop" ${['idle', 'error'].includes(reading) ? 'disabled' : ''}>Pause</button></div>
+      <p id="audio-status" class="audio-status" role="status" aria-live="polite">${audioMessage(state, reading)}</p>
+      <small>Voix : <a href="https://lingualibre.org/wiki/Q142683" target="_blank" rel="noopener">Poslovitch · Lingua Libre</a> · <a href="./audio/CREDITS.txt" target="_blank" rel="noopener">Sources des sons</a></small>
+    </section>
     <div class="study-layout"><section class="study-example" aria-label="Comprendre une addition">
       <p class="eyebrow">${visible ? 'JE COMPRENDS CETTE ADDITION' : 'JE ME RAPPELLE LA RÉPONSE'}</p>
       <h2 class="equation study-equation" aria-label="${f.a} plus ${f.b} égale ${visible ? f.a + f.b : 'combien ?'}"><span>${f.a}</span><span class="operator">+</span><span>${f.b}</span><span class="operator">=</span><span class="${visible ? 'study-sum' : 'unknown'}">${visible ? f.a + f.b : '?'}</span></h2>
@@ -33,4 +41,13 @@ export function renderStudy(state: StudyState): string {
     </section><section class="study-list" aria-label="La table complète"><h2>Ma table, dans l’ordre</h2><p>Touche une ligne pour la comprendre.</p><ol>${facts.map(row => { const shown = !state.masked || state.revealed.has(row.b); return `<li><button class="study-row ${state.term === row.b ? 'active' : ''}" data-study-term="${row.b}" ${state.term === row.b ? 'aria-current="step"' : ''} aria-label="${row.a} plus ${row.b} ${shown ? `égale ${row.a + row.b}` : 'résultat caché'}"><span>${row.a} <span class="operator">+</span> ${row.b}</span><span class="operator">=</span><strong>${shown ? row.a + row.b : '?'}</strong></button></li>`; }).join('')}</ol></section></div>
     <div class="study-bottom"><p>Ici, tu peux apprendre sans score et sans chronomètre.</p><button class="primary" data-action="study-practice">Je suis prête à m’entraîner →</button></div>
   </section>`;
+}
+
+export function audioMessage(state: StudyState, status: ReadingStatus): string {
+  if (status === 'error') return 'La lecture n’a pas démarré. Touche « Écouter » pour réessayer.';
+  if (state.masked && !state.revealed.has(state.term)) return 'Le son attend que tu révèles la réponse.';
+  if (status === 'loading') return 'La voix se prépare…';
+  if (status === 'playing') return `J’écoute : ${state.table} + ${state.term}, ${state.table + state.term}.`;
+  if (status === 'waiting') return 'À toi de répéter… La ligne suivante arrive.';
+  return 'Touche « Écouter » pour commencer ou reprendre. Le son peut être coupé à tout moment.';
 }

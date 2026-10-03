@@ -1,5 +1,6 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { audioRange } from './audio-range.mjs';
 async function files(dir, prefix = '') {
   const list = [];
   for (const f of await readdir(dir, { withFileTypes: true })) {
@@ -12,6 +13,7 @@ async function files(dir, prefix = '') {
 const paths = await files('docs');
 const hash = createHash('sha256');
 hash.update(await readFile('scripts/build-sw.mjs'));
+hash.update(audioRange.toString());
 for (const path of paths) hash.update(await readFile(`docs/${path}`));
 const version = hash.digest('hex').slice(0, 16);
 await writeFile('docs/.nojekyll', '');
@@ -19,6 +21,7 @@ await writeFile('docs/sw.js', `// Generated from the actual release contents.
 const CACHE = 'jardin-additions-${version}';
 const SCOPE = new URL(self.registration.scope);
 const ASSETS = ${JSON.stringify(['./', ...paths.map(p => './' + p)])};
+${audioRange.toString()}
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
@@ -38,7 +41,10 @@ self.addEventListener('fetch', event => {
     }
     // These same-origin static files have identical content for every request.
     // A development server's Vary: Origin must not hide a precached module offline.
-    return (await cache.match(event.request, { ignoreVary: true })) || fetch(event.request);
+    const cached = await cache.match(event.request, { ignoreVary: true });
+    const range = event.request.headers.get('Range');
+    if (cached && range && url.pathname.endsWith('.mp3')) return audioRange(cached, range);
+    return cached || fetch(event.request);
   }));
 });
 `);

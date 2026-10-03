@@ -14,6 +14,16 @@ Un jeu en TypeScript pour apprendre les **110 additions de 1 + 0 à 10 + 10**. A
 
 Sélection des tables de 1 à 10 ; le second terme va toujours de 0 à 10. L’apprentissage présente les 11 lignes de la table choisie ; les parties d’exercices sans chronomètre comptent 10 calculs. Les calculs moins maîtrisés arrivent en premier ; une erreur revient après quelques questions. Un indice ou une réponse corrigée ne donne pas une fleur : il faut trois réponses consécutives justes, autonomes et du premier coup. La lecture et la mémorisation des tables ne modifient pas les scores ou la maîtrise. La découverte ne modifie pas la maîtrise. Les étoiles récompensent les découvertes ou les bonnes réponses autonomes.
 
+## Apprendre avec la voix
+
+Dans **J’apprends mes tables**, activer **Lecture automatique** pour écouter la table à partir de la ligne sélectionnée jusqu’à + 10. Une pause de 3 secondes entre les additions permet de répéter. **Pause** arrête immédiatement la lecture ; **Écouter la table d’ici** la reprend. Désactiver la lecture automatique conserve la possibilité d’écouter une seule addition. Le choix est mémorisé sur cet appareil ; le son est désactivé lors de la première visite.
+
+**3 + 5 = 8** est lu **« trois plus cinq, huit »**, avec les trois premiers mots rapprochés, une courte pause avant le résultat et sans prononcer « égale ». La voix est accélérée de 8 % sans changer sa hauteur. Changer de table ou de ligne interrompt la lecture précédente. Cacher les résultats coupe le son ; seul un résultat explicitement révélé peut ensuite être lu, sans passer automatiquement à la ligne suivante. Quitter le mode, ouvrir une fenêtre d’aide ou passer en arrière-plan coupe aussi la lecture. En cas de restriction de lecture du navigateur, toucher **Écouter** pour reprendre. Les sons sont inclus dans le cache hors connexion de la PWA.
+
+Voix et enregistrements : [Poslovitch sur Lingua Libre](https://lingualibre.org/wiki/Q142683). Les 21 nombres (0 à 20) et le signe « + » proviennent de Wikimedia Commons, sous **CC0**, licences vérifiées fichier par fichier. Les sources sont conservées dans `audio-sources/` : WAV originaux pour 0 à 19, transcodages Ogg officiels de Wikimedia pour 20 et « + ». Ils ont été raccourcis au niveau des silences, harmonisés en volume, assemblés et convertis en MP3. Aucune synthèse vocale ni appel à un service externe pendant le jeu. [Liste complète des sources et licences](https://girianshiido.github.io/jardin-des-additions/audio/CREDITS.txt), également disponible dans `public/audio/sources.json`.
+
+Pour régénérer les 110 phrases avec Python 3 et FFmpeg : `python3 scripts/build-audio.py`, puis `pnpm build`. Cette génération sonore est indépendante de la compilation web ordinaire et du workflow CI.
+
 ## Installer sur téléphone
 
 - **iPhone / iPad** : ouvrir dans Safari → Partager → Sur l’écran d’accueil. Choisir « Ouvrir comme app web » si proposé.
@@ -37,4 +47,4 @@ pnpm preview
 
 Le code du jeu est dans `src/`. Le moteur pédagogique est indépendant de l’interface dans `src/engine.ts`. La compilation produit `docs/`, publié sur GitHub Pages depuis `main:/docs`. Les chemins relatifs permettent le déploiement dans un sous-répertoire. Le service worker est généré après la compilation et précache les vrais fichiers de la version ; son nom de cache dépend de leur contenu. Une mise à jour ne s’active qu’après le téléchargement complet des nouveaux fichiers. Les parties déjà ouvertes continuent normalement ; recharger le jeu affiche ensuite la nouvelle version. La vérification des mises à jour contourne le cache du navigateur. La navigation essaie le réseau en premier et conserve une version complète de secours hors connexion. Les anciens fichiers compilés sont conservés dans `docs/assets/` pour éviter une page blanche quand un navigateur charge encore une ancienne page HTML.
 
-Les tests du moteur contrôlent la couverture complète des additions, la variété des choix et des parties, la progression et la résistance aux sauvegardes endommagées. Le workflow GitHub contrôle les tests, le typage et la reproductibilité du site compilé.
+Les tests contrôlent la couverture complète des additions, la variété des choix et des parties, la progression et la résistance aux sauvegardes endommagées, ainsi que les interruptions de lecture, les restrictions sonores du navigateur et les requêtes audio partielles hors connexion. Le workflow GitHub contrôle les tests, le typage et la reproductibilité du site compilé.

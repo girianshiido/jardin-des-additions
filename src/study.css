@@ -17,6 +17,23 @@
 .study-tabs button { flex: 1; min-width: 0; min-height: 48px; padding: 9px 12px; border-radius: 11px; background: transparent; font-size: .86rem; font-weight: 650; }
 .study-tabs .chosen { background: #fffef8; box-shadow: 0 2px 6px #324c3e0d; }
 .study-instructions { max-width: 660px; text-align: center; margin: 15px auto 24px; color: #6b7b62; font-size: .85rem; line-height: 1.7; }
+.study-audio { background: #f1ebdf; border: 1px solid #e7dfd0; border-radius: 20px; padding: 20px; margin-bottom: 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 20px; align-items: center; }
+.study-audio h2 { font-size: 1.12rem; }
+.study-audio p { font-size: .8rem; line-height: 1.65; }
+.study-audio > div > p { margin-top: 7px; color: #6b7b62; }
+.audio-toggle { border: 1px solid #b2bfa2; background: #fffef8; border-radius: 13px; padding: 12px 15px; min-height: 48px; font-size: .8rem; line-height: 1.5; }
+.audio-toggle[aria-checked="true"] { background: #dce9ce; border-color: #78966c; }
+.audio-actions { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+.audio-actions .text-button { min-height: 44px; padding: 10px; }
+.audio-actions button:disabled { opacity: .45; cursor: default; }
+.audio-status { color: #486044; }
+.study-audio small { grid-column: 1 / -1; font-size: .7rem; color: #6b7b62; line-height: 1.6; }
+.study-audio a { color: inherit; text-underline-offset: 3px; }
+@media (max-width: 700px) {
+  .study-audio { grid-template-columns: minmax(0, 1fr); padding: 18px; gap: 12px; }
+  .audio-toggle { width: 100%; }
+  .audio-actions .secondary { font-size: .8rem; }
+}
 .study-layout { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 25px; align-items: start; }
 .study-example { background: #fffef8; border: 1px solid #e0e5d7; border-radius: 24px; padding: 30px 25px; text-align: center; }
 .study-equation { font-size: 2.9rem; gap: 14px; margin: 26px 0; }

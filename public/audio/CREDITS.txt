@@ -1,0 +1,97 @@
+Le Jardin des additions — crédits sonores
+
+Voix et enregistrements : Poslovitch, projet Lingua Libre.
+Profil : https://lingualibre.org/wiki/Q142683
+Adaptations : silences raccourcis, volume harmonisé, assemblage, tempo accéléré de 8 % sans changement de hauteur, conversion MP3.
+Lecture : premier nombre, « plus », second nombre, pause, résultat.
+Aucune voix de synthèse. Les enregistrements sources sont dans audio-sources/.
+Les nombres 0 à 19 sont les WAV originaux ; 20 et « + » utilisent les transcodages Ogg officiels de Wikimedia.
+
+0 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-0.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+1 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-1.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+2 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-2.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+3 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-3.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+4 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-4.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+5 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-5.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+6 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-6.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+7 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-7.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+8 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-8.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+9 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-9.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+10 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-10.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+11 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-11.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+12 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-12.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+13 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-13.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+14 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-14.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+15 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-15.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+16 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-16.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+17 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-17.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+18 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-18.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+19 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-19.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
+20 — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-20.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
++ — Poslovitch — CC0
+https://commons.wikimedia.org/wiki/File:LL-Q150_(fra)-Poslovitch-%2B.wav
+http://creativecommons.org/publicdomain/zero/1.0/deed.en
+
