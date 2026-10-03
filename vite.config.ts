@@ -1,2 +1,3 @@
 import { defineConfig } from 'vite';
-export default defineConfig({ base: './', build: { outDir: 'docs', emptyOutDir: true } });
+// Previously opened or cached pages may still reference the previous release's assets.
+export default defineConfig({ base: './', build: { outDir: 'docs', emptyOutDir: false } });

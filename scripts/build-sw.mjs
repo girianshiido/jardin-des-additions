@@ -28,7 +28,13 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== SCOPE.origin || !url.pathname.startsWith(SCOPE.pathname)) return;
   event.respondWith(caches.open(CACHE).then(async cache => {
-    if (event.request.mode === 'navigate') return (await cache.match('./index.html')) || fetch(event.request);
+    if (event.request.mode === 'navigate') {
+      try {
+        const response = await fetch(event.request, { cache: 'no-store' });
+        if (response.ok) return response;
+      } catch { /* Fall back to the complete installed release without a network. */ }
+      return (await cache.match('./index.html')) || Response.error();
+    }
     return (await cache.match(event.request)) || fetch(event.request);
   }));
 });
